@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(eval = FALSE)
 
 # Load packages
 c('sf') |> sapply(require,character.only = TRUE)
@@ -22,8 +22,10 @@ source('Data processing.R')
 ## Data selection
 Retrieve the queried data
 ```{r}
-power_consumption <- read.csv(file = 'C:/Program Files/PostgreSQL/my_SQL_data/Master thesis SQL data/query_outputs/abyei_l2_ts_values_pow_con.csv')
-sensors <- read.csv(file = 'C:/Program Files/PostgreSQL/my_SQL_data/Master thesis SQL data/query_outputs/abyei_l2_sensors_pow_con.csv')
+power_consumption <- read.csv(file = #path to queried consumption data from local SQL database
+                                )
+sensors <- read.csv(file = #path to queried consumption data from local SQL database
+                      )
 ```
 
 Format raw values
