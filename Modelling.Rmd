@@ -24,9 +24,9 @@ dir.create('./bym_models/')
 
 Retrieved processed data
 ```{r}
-power_consumption <- "~/Archives/Máster GeoTech/4. Master thesis/IoT-Modelling/data/processed_data/power_consumption_processed.csv" |> read.csv()
+power_consumption <- "./data/processed_data/power_consumption_processed.csv" |> read.csv()
 
-sensors <- "~/Archives/Máster GeoTech/4. Master thesis/IoT-Modelling/data/processed_data/sensors_processed.csv" |> read.csv()
+sensors <- "./data/processed_data/sensors_processed.csv" |> read.csv()
 ```
 
 ### Data preparation for LSTM models
@@ -467,7 +467,7 @@ write.csv(arima_diag,file = arima_diag_file_path,
 ### Data preparation for BYM
 
 ```{r}
-sensors_sf <- "~/Archives/Máster GeoTech/4. Master thesis/IoT-Modelling/data/processed_data/sensors_processed.csv" |> read.csv() |> create_sf_from_df()
+sensors_sf <- "./data/processed_data/sensors_processed.csv" |> read.csv() |> create_sf_from_df()
 ```
 
 Filter best sensors (rmse > 7)
