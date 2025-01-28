@@ -1,10 +1,12 @@
 
-# Modelling of IoT-surveyed UN camps
+# Energy Consumption in IoT-surveyed Peacekeeping Missions
 
-<!-- badges: start -->
-<!-- badges: end -->
+Author: Rodrigo Malagón Rodríguez Date: January 2025
 
-This repository contains all the workflow and helping functions for the thesis project entitled
-`Energy Consumption in IoT-surveyed Peacekeeping Missions` by the author. The main workflow is distributed across Processing and Modelling modules
-These are accessible through the `Data processing.Rmd` and `Modelling.Rmd` files within this repository.
-
+This repository contains all the workflow and helping functions for the
+thesis project entitled
+`Energy Consumption in IoT-surveyed Peacekeeping Missions` by the
+author, presented at Universitat Jaume I as part of the degree MSc.
+Geospatial Technologies. The main workflow is distributed across
+Processing and Modelling modules These are accessible through the
+`Data processing.Rmd` and `Modelling.Rmd` files within this repository.
