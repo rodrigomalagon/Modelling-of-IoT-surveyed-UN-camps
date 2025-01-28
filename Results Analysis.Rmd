@@ -1,0 +1,211 @@
+---
+title: "Results Analysis"
+author: "Rodrigo Malagón"
+date: "2025-01-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = FALSE)
+
+# Load packages
+c('ggplot2') |> sapply(require,character.only = TRUE)
+
+# Load helping functions
+source('Results Analysis.R')
+```
+
+# Results analysis
+
+```{r}
+# Retrieve results
+bym_outputs_dir <- paste0('./bym_models/model_','2025-01-28','/')
+results_10m <- paste0(bym_outputs_dir,'bym_outputs_10m.csv') |> read.csv()
+results_30m <- paste0(bym_outputs_dir,'bym_outputs_30m.csv') |> read.csv()
+```
+
+
+Generate plots to compare model fits per sensor
+```{r}
+# Generate plots to compare model fits per sensor
+it <- list(
+  list(
+    voronoi_buffer_dist = 10,
+    results_df = results_10m
+  ),
+  list(
+    voronoi_buffer_dist = 30,
+    results_df = results_30m
+  )
+)
+
+for(i in 1:length(it)){
+  output_plots_path <- paste0(bym_outputs_dir,'prediction_test_plots_',it[[i]]$voronoi_buffer_dist,'m/')
+  dir.create(output_plots_path)
+  
+  # Create comparison plots
+  plot_bym_test_plots(results_df = it[[i]]$results_df,
+                      output_plots_path = output_plots_path)
+}
+```
+Generate diagnostics data frame
+
+
+```{r}
+
+diagnostics <- data.frame(MISSION_DEVICE_TAG = results_10m$MISSION_DEVICE_TAG)
+
+## Get scores per model combination
+
+# Rmse
+diagnostics$lstm_rmse <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'lstm',score_fun = rmse_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_rmse <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'lstm_arima',score_fun = rmse_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_bym_10m_rmse <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'bym_predictions',score_fun = rmse_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_bym_30m_rmse <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_30m,
+                          result_col = 'bym_predictions',score_fun = rmse_score)
+}) |> unlist()
+
+
+# R2
+diagnostics$lstm_r2 <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'lstm',score_fun = r2_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_r2 <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'lstm_arima',score_fun = r2_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_bym_10m_r2 <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_10m,
+                          result_col = 'bym_predictions',score_fun = r2_score)
+}) |> unlist()
+
+diagnostics$lstm_arima_bym_30m_r2 <- lapply(diagnostics$MISSION_DEVICE_TAG, function(sensor_id){
+  extract_score(sensor_id = sensor_id,
+                          results_df = results_30m,
+                          result_col = 'bym_predictions',score_fun = r2_score)
+}) |> unlist()
+
+
+write.csv(diagnostics,file = paste0(bym_outputs_dir,'diagnostics.csv'),row.names = FALSE)
+```
+
+Study metrics distribution
+```{r}
+diag_select <- diagnostics
+diag_select <- diag_select %>% dplyr::select(contains("rmse"))
+
+diagnostics_long <- tidyr::pivot_longer(diag_select,
+                              cols = everything(), names_to = "model", values_to = "rmse")
+
+# Rename
+diagnostics_long$model[diagnostics_long$model == 'lstm_arima_bym_30m_rmse'] <- 'BYM(30M)'
+diagnostics_long$model[diagnostics_long$model == 'lstm_arima_bym_10m_rmse'] <- 'BYM(10M)'
+diagnostics_long$model[diagnostics_long$model == 'lstm_rmse'] <- 'LSTM'
+diagnostics_long$model[diagnostics_long$model == 'lstm_arima_rmse'] <- 'LSTM + ARIMA'
+
+p <- ggplot(diagnostics_long, aes(x = model, y = rmse, fill = model)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Distibution of RMSE across sensors", x = "Models", y = "RMSE") +
+  scale_fill_brewer(palette = "Set3")
+
+#Save 
+
+model_comparison_plot_dir <- paste0(bym_outputs_dir,'model_comparison/')
+dir.create(model_comparison_plot_dir)
+
+image_name <- 'model_rmse_comparison.png'
+save_plot(p,save_file_path = paste0(model_comparison_plot_dir,image_name),inline_mode = TRUE)
+```
+
+Study overall metrics
+```{r}
+# Extract overall metrics
+overall_metrics <- data.frame(
+  model = c('LSTM','LSTM + AutoARIMA','LSTM + AutoARIMA + BYM(10m)','LSTM + AutoARIMA + BYM(30m)'),
+  rmse_train = c(
+    extract_score(results_df = results_10m,result_col = 'lstm',score_fun = rmse_score,data_set_val = 'train'),
+    extract_score(results_df = results_10m,result_col = 'lstm_arima',score_fun = rmse_score,data_set_val = 'train'),
+    extract_score(results_df = results_10m,result_col = 'bym_predictions',score_fun = rmse_score,data_set_val = 'train'),
+    extract_score(results_df = results_30m,result_col = 'bym_predictions',score_fun = rmse_score,data_set_val = 'train')
+    ),
+  r2_train = c(
+    extract_score(results_df = results_10m,result_col = 'lstm',score_fun = r2_score,data_set_val = 'train'),
+    extract_score(results_df = results_10m,result_col = 'lstm_arima',score_fun = r2_score,data_set_val = 'train'),
+    extract_score(results_df = results_10m,result_col = 'bym_predictions',score_fun = r2_score,data_set_val = 'train'),
+    extract_score(results_df = results_30m,result_col = 'bym_predictions',score_fun = r2_score,data_set_val = 'train')
+    ),
+    rmse_test = c(
+    extract_score(results_df = results_10m,result_col = 'lstm',score_fun = rmse_score,data_set_val = 'test'),
+    extract_score(results_df = results_10m,result_col = 'lstm_arima',score_fun = rmse_score,data_set_val = 'test'),
+    extract_score(results_df = results_10m,result_col = 'bym_predictions',score_fun = rmse_score,data_set_val = 'test'),
+    extract_score(results_df = results_30m,result_col = 'bym_predictions',score_fun = rmse_score,data_set_val = 'test')
+    ),
+  r2_test = c(
+    extract_score(results_df = results_10m,result_col = 'lstm',score_fun = r2_score,data_set_val = 'test'),
+    extract_score(results_df = results_10m,result_col = 'lstm_arima',score_fun = r2_score,data_set_val = 'test'),
+    extract_score(results_df = results_10m,result_col = 'bym_predictions',score_fun = r2_score,data_set_val = 'test'),
+    extract_score(results_df = results_30m,result_col = 'bym_predictions',score_fun = r2_score,data_set_val = 'test')
+    )
+)
+overall_metrics$r2_train <- overall_metrics$r2_train * 100
+overall_metrics$r2_test <- overall_metrics$r2_test * 100
+overall_metrics
+```
+
+```{r}
+# Save overall metrics
+# Round numeric cols to 2 digits
+for(col in colnames(overall_metrics)){
+  if(is.numeric(overall_metrics[[col]])){
+    overall_metrics[[col]] <- overall_metrics[[col]] |> round(digits = 2)
+  }
+}
+
+write.csv(overall_metrics,
+          file = paste0(bym_outputs_dir,'model_comparison/overall_metrics.csv'),
+          row.names = FALSE)
+```
+
+
+```{r}
+# Create plot of overall metrics
+overall_metrics_long <- tidyr::pivot_longer(overall_metrics, cols = c(r2_train,r2_test), 
+                          names_to = "Feature", values_to = "Value")
+
+# Create bar plots
+p <- ggplot(overall_metrics_long, aes(x = Value, y = Feature, fill = model)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "R^2 model comparison", x = "Value", y = "Metric") +
+  scale_fill_brewer(palette = "Set2")
+
+# Save plot
+image_name <- 'overall_r2_comparison.png'
+save_plot(p,save_file_path = paste0(model_comparison_plot_dir,image_name),inline_mode = TRUE)
+```
+
+
