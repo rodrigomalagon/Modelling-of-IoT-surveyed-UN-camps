@@ -1,16 +1,19 @@
 
-# Energy Consumption in IoT-surveyed Peacekeeping Missions
+# Energy Consumption Modelling in IoT-surveyed Peacekeeping Missions
 
-Author: Rodrigo Malagón Rodríguez Date: January 2025
+Author: Rodrigo Malagón Rodríguez
 
-This repository contains all the workflow and helping functions for the
-thesis project entitled
-`Energy Consumption in IoT-surveyed Peacekeeping Missions` by the
-author, presented at Universitat Jaume I as part of the degree MSc.
+Date: January 2025
+
+This repository contains the source code used in the thesis project
+entitled
+`Energy Consumption Modelling in IoT-surveyed Peacekeeping Missions` by
+the author, presented at Universitat Jaume I, as part of the MSc.
 Geospatial Technologies. The main workflow is distributed across
-Processing and Modelling modules These are accessible through the
-`Data processing.Rmd` and `Modelling.Rmd` files within this repository.
+Processing and Modelling modules. These are accessible through the
+`Data processing.md` and `Modelling.md` files, respectively.
 
-Due to protection of data by the providor of data, the UNGSC agency, we
-are not allowed to share the data. However, the complete techniques and
-code developed by the author is share in this public repository.
+The data used in this work was provided by the UNGSC agency. Due to
+privacy concerns by the providor, we only share the source code.
+However, the methods and code by the author are shared through the
+license provided in this repository.
