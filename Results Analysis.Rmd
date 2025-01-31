@@ -10,12 +10,13 @@ knitr::opts_chunk$set(eval = FALSE)
 
 # Load packages
 c('ggplot2') |> sapply(require,character.only = TRUE)
+```
 
+```{r}
 # Load helping functions
 source('Results Analysis.R')
 ```
 
-# Results analysis
 
 ```{r}
 # Retrieve results

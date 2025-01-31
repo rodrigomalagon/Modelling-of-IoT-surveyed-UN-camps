@@ -3,7 +3,11 @@ Data processing
 Rodrigo Malagón
 2025-01-27
 
-# Data processing
+``` r
+# Load helping functions
+source('Data selection.R')
+source('Data processing.R')
+```
 
 ## Data selection
 

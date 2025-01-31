@@ -11,14 +11,15 @@ knitr::opts_chunk$set(eval = FALSE)
 
 # Load packages
 c('sf','keras3','ggplot2','forecast','spdep','INLA') |> sapply(require,character.only = TRUE)
+```
 
+```{r}
 # Load helping functions
 source('LSTM.R')
 source('AutoARIMA.R')
 source('BYM.R')
 ```
 
-# Modelling
 
 Set general environment
 ```{r}

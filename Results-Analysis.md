@@ -3,7 +3,10 @@ Results Analysis
 Rodrigo Malagón
 2025-01-28
 
-# Results analysis
+``` r
+# Load helping functions
+source('Results Analysis.R')
+```
 
 ``` r
 # Retrieve results

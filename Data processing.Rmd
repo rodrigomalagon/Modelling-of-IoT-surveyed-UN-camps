@@ -10,13 +10,14 @@ knitr::opts_chunk$set(eval = FALSE)
 
 # Load packages
 c('sf') |> sapply(require,character.only = TRUE)
+```
 
+```{r}
 # Load helping functions
 source('Data selection.R')
 source('Data processing.R')
 ```
 
-# Data processing
 
 
 ## Data selection

@@ -3,7 +3,12 @@ Modelling
 Rodrigo Malagón
 2025-01-28
 
-# Modelling
+``` r
+# Load helping functions
+source('LSTM.R')
+source('AutoARIMA.R')
+source('BYM.R')
+```
 
 Set general environment
 
