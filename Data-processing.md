@@ -1,27 +1,15 @@
----
-title: "Data processing"
-author: "Rodrigo Malagón"
-date: "2025-01-27"
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(eval = FALSE)
-
-# Load packages
-c('sf') |> sapply(require,character.only = TRUE)
-
-# Load helping functions
-source('Data selection.R')
-source('Data processing.R')
-```
+Data processing
+================
+Rodrigo Malagón
+2025-01-27
 
 # Data processing
 
-
 ## Data selection
+
 Retrieve the queried data
-```{r}
+
+``` r
 power_consumption <- read.csv(file = #path to queried consumption data from local SQL database
                                 )
 sensors <- read.csv(file = #path to queried consumption data from local SQL database
@@ -29,7 +17,8 @@ sensors <- read.csv(file = #path to queried consumption data from local SQL data
 ```
 
 Format raw values
-```{r}
+
+``` r
 # Process power consumption reading with weight value
 power_consumption$value <- gsub(',','.',power_consumption$TAG_VALUE_RAW)|> as.numeric()
 power_consumption$value <- power_consumption$value / as.numeric(power_consumption$TAG_WEIGHT)
@@ -40,7 +29,8 @@ sensors$long <- gsub(',','.',sensors$OGI_LONG)|> as.numeric()
 ```
 
 Extract time leap per sensors
-```{r}
+
+``` r
 # Extract time leap in each sensor's time series
 sensors$time_leap_mins <- lapply(sensors$MISSION_DEVICE_TAG,
   function(sensor_id){
@@ -53,8 +43,10 @@ sensors$time_leap_mins <- lapply(sensors$MISSION_DEVICE_TAG,
   }) |> unlist()
 ```
 
-Extract degree of time completeness and filter sensors with only > 80 % completeness
-```{r}
+Extract degree of time completeness and filter sensors with only \> 80 %
+completeness
+
+``` r
 # Set time extent parameters of the project
 initial_timestamp <- power_consumption[1,'TAG_VALUE_TIMESTAMP']
 final_timestamp <- power_consumption[nrow(power_consumption),'TAG_VALUE_TIMESTAMP']
@@ -74,7 +66,8 @@ sensors <- sensors[sensors$time_completeness > 0.8,]
 ```
 
 Filter out repeated locations
-```{r}
+
+``` r
 df <- sensors
 df$long_lat <- paste0(df$long,'_',df$lat)
 locations_summary <- table(df$long_lat)
@@ -85,7 +78,8 @@ sensors <- dplyr::select(df,-long_lat)
 ```
 
 Filter out cluster locations
-```{r}
+
+``` r
 # Create sf object
 sensors_sf <- create_sf_from_df(sensors)
 
@@ -108,33 +102,31 @@ nn_distances <- lapply(1:nrow(sensors_sf), function(row_ind){
 sensors <- sensors[nn_distances > distance_filter_threshold,]
 ```
 
-
 Filter time series data according to selected sensors
-```{r}
+
+``` r
 power_consumption <- power_consumption[power_consumption$MISSION_DEVICE_TAG %in% sensors$MISSION_DEVICE_TAG,]
 ```
 
-
 Save selected sensors and time series data
-```{r}
+
+``` r
 write.csv(sensors,file = 'data/sensors_selected.csv',row.names = FALSE)
 write.csv(power_consumption,file = 'data/power_consumption_selected.csv',row.names = FALSE)
 ```
 
-
-
-
 ## Time series processing
+
 Read selected data
-```{r}
+
+``` r
 sensors <- read.csv('data/sensors_selected.csv')
 power_consumption <- read.csv('data/power_consumption_selected.csv')
 ```
 
-
-
 Directories setting
-```{r}
+
+``` r
 processing_outputs_dir <- './data/processed_data/'
 timestamp_processing_dir <- paste0(processing_outputs_dir,'abyei_pow_con_processed_timestamp/')
 filter_and_diff_dir <- paste0(processing_outputs_dir,'abyei_pow_con_time_series_diffs/')
@@ -146,9 +138,9 @@ dir.create(filter_and_diff_dir)
 dir.create(interpolated_dir)
 ```
 
-
 Timestamp correction
-```{r}
+
+``` r
 for(sensor_id in sensors$MISSION_DEVICE_TAG){
   
   # Get time series per sensor
@@ -174,7 +166,8 @@ for(sensor_id in sensors$MISSION_DEVICE_TAG){
 ```
 
 Filter correct data, obtain differences and mask out outliers
-```{r}
+
+``` r
 # Set input and ouput files
 input_path <- timestamp_processing_dir
 output_path <- filter_and_diff_dir
@@ -199,7 +192,8 @@ for(file in list.files(input_path,full.names = TRUE)){
 ```
 
 Interpolate with Kalman filter
-```{r}
+
+``` r
 input_path <- filter_and_diff_dir
 output_path <- interpolated_dir
 
@@ -218,9 +212,9 @@ for(file in list.files(input_path,full.names = TRUE)){
 }
 ```
 
-
 Stack interpolated time series
-```{r}
+
+``` r
 # Define empty data frame with desired structure
 cols <- c("MISSION_DEVICE_TAG","reg_timestamp","value","value_filtered",'value_diff_raw',"value_diff","value_diff_interpolated")
 stack_processed_power_consumption <- data.frame(matrix(ncol = length(cols),nrow = 0))
@@ -242,19 +236,16 @@ for(file in list.files(input_path,full.names = TRUE)){
 }
 ```
 
-
 Filter only processed sensors
-```{r}
+
+``` r
 sensors <- sensors[sensors$MISSION_DEVICE_TAG %in% stack_processed_power_consumption$MISSION_DEVICE_TAG,]
 ```
 
-
-```{r abyei_l2_ts_pow_con_cleaned.csv}
+``` r
 file_path <- paste0(processing_outputs_dir,'sensors_processed.csv')
 write.csv(sensors,file = file_path,row.names = FALSE)
 
 file_path <- paste0(processing_outputs_dir,'power_consumption_processed.csv')
 write.csv(stack_processed_power_consumption,file = file_path,row.names = FALSE)
 ```
-
-

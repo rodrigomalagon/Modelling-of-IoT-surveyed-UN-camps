@@ -1,3 +1,10 @@
+---
+title: "Modelling"
+author: "Rodrigo Malagón"
+date: "2025-01-28"
+output: github_document
+---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(eval = FALSE)

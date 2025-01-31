@@ -1,32 +1,20 @@
----
-title: "Results Analysis"
-author: "Rodrigo Malagón"
-date: "2025-01-28"
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(eval = FALSE)
-
-# Load packages
-c('ggplot2') |> sapply(require,character.only = TRUE)
-
-# Load helping functions
-source('Results Analysis.R')
-```
+Results Analysis
+================
+Rodrigo Malagón
+2025-01-28
 
 # Results analysis
 
-```{r}
+``` r
 # Retrieve results
 bym_outputs_dir <- paste0('./bym_models/model_','2025-01-28','/')
 results_10m <- paste0(bym_outputs_dir,'bym_outputs_10m.csv') |> read.csv()
 results_30m <- paste0(bym_outputs_dir,'bym_outputs_30m.csv') |> read.csv()
 ```
 
-
 Generate plots to compare model fits per sensor
-```{r}
+
+``` r
 # Generate plots to compare model fits per sensor
 it <- list(
   list(
@@ -48,11 +36,10 @@ for(i in 1:length(it)){
                       output_plots_path = output_plots_path)
 }
 ```
+
 Generate diagnostics data frame
 
-
-```{r}
-
+``` r
 diagnostics <- data.frame(MISSION_DEVICE_TAG = results_10m$MISSION_DEVICE_TAG)
 
 ## Get scores per model combination
@@ -113,7 +100,8 @@ write.csv(diagnostics,file = paste0(bym_outputs_dir,'diagnostics.csv'),row.names
 ```
 
 Study metrics distribution
-```{r}
+
+``` r
 diag_select <- diagnostics
 diag_select <- diag_select %>% dplyr::select(contains("rmse"))
 
@@ -142,7 +130,8 @@ save_plot(p,save_file_path = paste0(model_comparison_plot_dir,image_name),inline
 ```
 
 Study overall metrics
-```{r}
+
+``` r
 # Extract overall metrics
 overall_metrics <- data.frame(
   model = c('LSTM','LSTM + AutoARIMA','LSTM + AutoARIMA + BYM(10m)','LSTM + AutoARIMA + BYM(30m)'),
@@ -176,7 +165,7 @@ overall_metrics$r2_test <- overall_metrics$r2_test * 100
 overall_metrics
 ```
 
-```{r}
+``` r
 # Save overall metrics
 # Round numeric cols to 2 digits
 for(col in colnames(overall_metrics)){
@@ -190,8 +179,7 @@ write.csv(overall_metrics,
           row.names = FALSE)
 ```
 
-
-```{r}
+``` r
 # Create plot of overall metrics
 overall_metrics_long <- tidyr::pivot_longer(overall_metrics, cols = c(r2_train,r2_test), 
                           names_to = "Feature", values_to = "Value")
@@ -207,5 +195,3 @@ p <- ggplot(overall_metrics_long, aes(x = Value, y = Feature, fill = model)) +
 image_name <- 'overall_r2_comparison.png'
 save_plot(p,save_file_path = paste0(model_comparison_plot_dir,image_name),inline_mode = TRUE)
 ```
-
-
