@@ -11,8 +11,8 @@ entitled
 the author, presented at Universitat Jaume I, as thesis project for the
 MSc. Geospatial Technologies. The main workflow is distributed across
 Processing and Modelling modules. These are accessible through the
-[`Data processing.md`](Data%20processing.md) and `Modelling.md` files,
-respectively.
+[`Data processing.md`](Data-processing.md) and
+[`Modelling.md`](Modelling.md) files, respectively.
 
 The data used in this work was provided by the UNGSC agency. Due to
 privacy concerns by the provider, we only share the source code.
