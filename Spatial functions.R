@@ -26,6 +26,12 @@ transform_to_centered_aeqd <- function(sf_points){
   return(sf_points)
 }
 
+# Create sf object from sensors dataset
+create_sf_from_df <- function(df,long_lat_names = c('long','lat'),crs='EPSG:4326'){
+  sensors_sf <- st_as_sf(df,coords = long_lat_names, crs = crs) |> transform_to_centered_aeqd()
+  return(sensors_sf)
+}
+
 
 # Retrieve ids of neighbouring sensors
 get_neighbours_ids <- function(sensor_id,sensors,buffer_search = units::set_units(10,'m')){
