@@ -7,12 +7,12 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(eval = FALSE)
-
-# Load packages
-c('sf') |> sapply(require,character.only = TRUE)
 ```
 
 ```{r}
+# Load packages
+c('sf') |> sapply(require,character.only = TRUE)
+
 # Load helping functions
 source('Data selection.R')
 source('Data processing.R')
