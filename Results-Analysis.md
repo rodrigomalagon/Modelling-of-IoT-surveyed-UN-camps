@@ -4,9 +4,16 @@ Rodrigo Malagón
 2025-01-28
 
 ``` r
+# Load packages
+c('ggplot2','sf') |> sapply(require,character.only = TRUE)
+
 # Load helping functions
 source('Results Analysis.R')
+source('Spatial functions.R')
+source('BYM.R')
 ```
+
+## Model metrics
 
 ``` r
 # Retrieve results
@@ -198,3 +205,76 @@ p <- ggplot(overall_metrics_long, aes(x = Value, y = Feature, fill = model)) +
 image_name <- 'overall_r2_comparison.png'
 save_plot(p,save_file_path = paste0(model_comparison_plot_dir,image_name),inline_mode = TRUE)
 ```
+
+## BYM effects
+
+Set model to analyse
+
+``` r
+bym_outputs_dir <- paste0('./bym_models/model_','2025-01-28','/')
+```
+
+Retrieve BYM results
+
+``` r
+bym_results <- list()
+for(buff_dist in c(10,30)){
+  lab <- paste0(buff_dist,'m')
+  bym_results[[lab]] <-  paste0(bym_outputs_dir,'bym_results_',lab,'.rds') |> readRDS()
+}
+```
+
+Sensor data alignment
+
+``` r
+# Read sensor data and order by name to align with BYM setting
+sensors_df <- "./data/sensors_selected.csv" |>
+  read.csv()  |>
+  dplyr::arrange(MISSION_DEVICE_TAG)
+
+# Extract sensores considered in BYM models
+bym_10_outputs <- paste0(bym_outputs_dir,'bym_outputs_10m.csv') |> 
+  read.csv()
+bym_modelled_sensors <- bym_10_outputs$MISSION_DEVICE_TAG |> unique()
+
+# Filter sensors data frame accordinf to the retrieved ids
+sensors_df <- sensors_df[sensors_df$MISSION_DEVICE_TAG %in% bym_modelled_sensors,]
+```
+
+Prepare output directory
+
+``` r
+dir.create(paste0(bym_outputs_dir,'spatial_effects/'))
+```
+
+Save structured and structured effect data frames
+
+``` r
+for(voronoi_buffer_dist in c(10,30)){
+  
+  # Extract model results
+  lab <- paste0(voronoi_buffer_dist,'m')
+  model_results <- bym_results[[lab]]
+  
+  # Create voronoi polygons
+  sensors_sf <- sensors_df |> create_sf_from_df()
+  voronoi_geoms <- extract_voronoi_from_sensors(sensors_sf,                                        outer_buffer_distance=units::set_units(voronoi_buffer_dist,'m'))
+  voronoi_sf <- st_sf(sensors_sf$MISSION_DEVICE_TAG,
+                    geometry = voronoi_geoms)
+  
+  # Set up output sf objects
+  spatial_effects_df <- data.frame(
+      MISSION_DEVICE_TAG = sensors_df$MISSION_DEVICE_TAG,
+      structured_effect = model_results$summary.random$location$mean,
+      unstructured_effect = model_results$summary.random$location.struct$mean,
+      geometry = voronoi_sf$geometry
+      ) |> st_sf(crs = st_crs(voronoi_sf))
+  
+  # Write data frame
+  file_path <- paste0(bym_outputs_dir,'spatial_effects/spatial_effects_',
+                      voronoi_buffer_dist,'m.shp')
+  st_write(spatial_effects_df,dsn = file_path,row.names = FALSE)
+}
+```
+
+## Results analysis
