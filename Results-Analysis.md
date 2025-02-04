@@ -5,7 +5,7 @@ Rodrigo Malagón
 
 ``` r
 # Load packages
-c('ggplot2','sf') |> sapply(require,character.only = TRUE)
+c('ggplot2','sf','corrplot') |> sapply(require,character.only = TRUE)
 
 # Load helping functions
 source('Results Analysis.R')
@@ -50,7 +50,7 @@ for(i in 1:length(it)){
 Generate diagnostics data frame
 
 ``` r
-diagnostics <- data.frame(MISSION_DEVICE_TAG = results_10m$MISSION_DEVICE_TAG)
+diagnostics <- data.frame(MISSION_DEVICE_TAG = unique(results_10m$MISSION_DEVICE_TAG))
 
 ## Get scores per model combination
 
@@ -278,3 +278,228 @@ for(voronoi_buffer_dist in c(10,30)){
 ```
 
 ## Results analysis
+
+Set model to analyse and retrieve error dataset with lat-long
+
+``` r
+bym_outputs_dir <- paste0('./bym_models/model_','2025-01-28','/')
+diagnostics_loc <- paste0(bym_outputs_dir,'diagnostics_loc.csv') |> read.csv()
+```
+
+### Error extraction
+
+Retrieve diagnostic metrics
+
+``` r
+diagnostics <- paste0(bym_outputs_dir,'diagnostics.csv') |> read.csv()
+```
+
+Sensors location retrieval and merge
+
+``` r
+file_path <- "./data/sensors_selected.csv"
+sensors <- read.csv(file_path)
+sensors_sf <- create_sf_from_df(sensors_df = sensors)
+
+diagnostics_loc <- merge(diagnostics,
+      sensors[c('MISSION_DEVICE_TAG','long','lat')],
+      by = 'MISSION_DEVICE_TAG',
+      all.x = TRUE)
+```
+
+Save/load error df with locations
+
+``` r
+file_path <-paste0(bym_outputs_dir,'diagnostics_loc.csv')
+write.csv(diagnostics_loc,file = file_path,row.names = FALSE)
+```
+
+### Error vs temporal variability and spatial structure
+
+Build results analysis folder
+
+``` r
+results_analysis_dir <- paste0(bym_outputs_dir,'results_analysis/')
+dir.create(results_analysis_dir)
+```
+
+Retrieve time series data
+
+``` r
+ts_df <- paste0(bym_outputs_dir,'bym_outputs_10m.csv') |> read.csv()
+```
+
+Extract variance features per sensor
+
+``` r
+# VAR per sensor
+diagnostics_loc$ts_var <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+    ts <- ts_df[ts_df$MISSION_DEVICE_TAG == sensor_id,'y']
+    var(ts)
+  }
+) |> 
+  unlist()
+
+# SD(Moving VAR) per sensor
+diagnostics_loc$ts_mov_var_sd <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+    ts <- ts_df[ts_df$MISSION_DEVICE_TAG == sensor_id,'y']
+    
+    # Moving window var extraction
+    vars <- numeric()
+    window_rad <- 7  # radius of window
+    for(i in 1:length(ts)){
+      window <- (max(0,i-window_rad):min(length(ts),i+window_rad))
+      vars <- c(vars,var(ts[window]))
+    }
+    sd(vars)
+  }
+) |> 
+  unlist()
+
+# MINMAX(Moving VAR) per sensor
+diagnostics_loc$ts_mov_var_minmax <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+    ts <- ts_df[ts_df$MISSION_DEVICE_TAG == sensor_id,'y']
+    
+    # Moving window var extraction
+    vars <- numeric()
+    window_rad <- 7  # radius of window
+    for(i in 1:length(ts)){
+      window <- (max(0,i-window_rad):min(length(ts),i+window_rad))
+      vars <- c(vars,var(ts[window]))
+    }
+    max(vars) - min(vars)
+  }
+) |> 
+  unlist()
+```
+
+Extract spatial features
+
+``` r
+# Set sf object for spatial analysis
+diagnostics_loc_sf <- diagnostics_loc |> create_sf_from_df() 
+
+# Extract number of neighbours per sensor closer to a given distance
+diagnostics_loc$num_neigh_10m <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+    dist <- st_distance(diagnostics_loc_sf[diagnostics_loc_sf$MISSION_DEVICE_TAG == sensor_id,],diagnostics_loc_sf) < units::as_units(10,'m') # Buffer distance
+    sum(dist)
+  }
+) |> unlist()
+
+diagnostics_loc$num_neigh_30m <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+    dist <- st_distance(diagnostics_loc_sf[diagnostics_loc_sf$MISSION_DEVICE_TAG == sensor_id,],diagnostics_loc_sf) < units::as_units(30,'m') # Buffer distance
+    sum(dist)
+  }
+) |> unlist()
+```
+
+Centroid distance analysis
+
+``` r
+# Get centroid of all sensors
+centroid <- diagnostics_loc_sf |> st_union() |> st_centroid()
+
+
+diagnostics_loc$dist_cent <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(
+  function(sensor_id){
+
+      # Obtain distance to centroid
+    d <- st_distance(diagnostics_loc_sf[diagnostics_loc_sf$MISSION_DEVICE_TAG == sensor_id,"geometry"],centroid)
+    return(d)
+  }
+) |> unlist()
+```
+
+Distance to 10m-adjacency-graph component centroid
+
+``` r
+# Classify all points by connected component of within-20m relationship (10m buffer polygons touching each other)
+adj_matrix <- st_distance(diagnostics_loc_sf) < units::set_units(20,'m')
+graph <- igraph::graph_from_adjacency_matrix(adj_matrix,mode = 'undirected')
+components <- igraph::components(graph)
+diagnostics_loc_sf$connected_component <- components$membership
+
+# Obtain centroid per component
+component_centroids <- diagnostics_loc_sf |>
+  dplyr::group_by(connected_component) |>         # Group by the "connected_component" column
+  dplyr::summarize(geometry = st_centroid(st_union(geometry)))
+```
+
+Plot extracted connected components and centroids
+
+``` r
+plot(diagnostics_loc_sf$geometry,col='blue')
+plot(component_centroids$geometry,col = 'red',add = TRUE,pch = 16)
+```
+
+``` r
+diagnostics_loc$dist_cent_con_comp <- diagnostics_loc$MISSION_DEVICE_TAG |> lapply(function(sensor_id){
+  sensor_selection <- diagnostics_loc_sf[diagnostics_loc_sf$MISSION_DEVICE_TAG == sensor_id,]
+  centroid <- component_centroids[component_centroids$connected_component == sensor_selection$connected_component,"geometry"]
+  st_distance(sensor_selection$geometry,centroid)
+})|> unlist()
+```
+
+Save extracted data
+
+``` r
+file_path <- paste0(results_analysis_dir,'rmse_analysis.csv')
+write.csv(diagnostics_loc,file = file_path,row.names = FALSE)
+```
+
+### Correlation analysis
+
+``` r
+# Filter and rename cols of interest for correlation analysis
+cols <- c('lstm_rmse','lstm_arima_rmse','lstm_arima_bym_10m_rmse',
+          'lstm_arima_bym_30m_rmse','ts_var','ts_mov_var_sd','num_neigh_10m','num_neigh_10m',
+          'dist_cent','dist_cent_con_comp')
+df <- diagnostics_loc[cols]
+
+colnames(df) <- c('LSTM_RMSE','ARIMA_RMSE','BYM30_RMSE',
+                  'BYM10_RMSE','VAR','SD(MOV_VAR)','NEIGH_10m','NEIGH_30m','DIST_CENT','DIST_CENT_CON_COMP')
+
+# Create and save corr matrix
+cor_mat <- cor(df)
+cor_mat_df <- cor_mat |> as.data.frame()
+cor_mat_df <- cor_mat_df |> round(digits = 2) 
+cor_mat_df <- cor_mat_df[1:4,5:ncol(cor_mat_df)]
+cor_mat_df|>write.csv(paste0(results_analysis_dir,'correlation_matrix.csv'))
+cor_mat_df
+```
+
+Plot correlation
+
+``` r
+image_path <- paste0(results_analysis_dir,'correlation-plot.png')
+png(image_path)
+corrplot(cor(df),method = "circle",type = "upper", tl.col = "black", tl.srt = 45)
+dev.off()
+```
+
+Correlation test
+
+``` r
+corr_p_vals <- data.frame(errors = c('LSTM_RMSE','ARIMA_RMSE','BYM30_RMSE','BYM10_RMSE'))
+
+# Retrieve correlation test p-values between errors and features
+for(feature in c('VAR','SD(MOV_VAR)','NEIGH_10m','NEIGH_30m','DIST_CENT','DIST_CENT_CON_COMP')){
+  corr_p_vals[feature] <- corr_p_vals$errors |> lapply(
+  function(error){
+         res <- cor.test(df[[error]], df[[feature]], method = "pearson")
+         res$p.value
+       }
+      ) |> unlist()
+}
+
+corr_p_vals
+
+write.csv(corr_p_vals,
+          file = paste0(results_analysis_dir,'corr_p_vals.csv'),
+          row.names = FALSE)
+```
