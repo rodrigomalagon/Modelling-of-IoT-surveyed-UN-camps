@@ -4,8 +4,12 @@ Rodrigo Malagón
 2025-01-28
 
 ``` r
+# Load packages
+c('sf','keras3','ggplot2','forecast','spdep','INLA') |> sapply(require,character.only = TRUE)
+
 # Load helping functions
 source('LSTM.R')
+source('Spatial functions.R')
 source('AutoARIMA.R')
 source('BYM.R')
 ```

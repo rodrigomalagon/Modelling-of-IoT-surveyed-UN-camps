@@ -4,6 +4,9 @@ Rodrigo Malagón
 2025-01-27
 
 ``` r
+# Load packages
+c('sf') |> sapply(require,character.only = TRUE)
+
 # Load helping functions
 source('Data selection.R')
 source('Data processing.R')
