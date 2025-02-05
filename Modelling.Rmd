@@ -21,14 +21,15 @@ source('AutoARIMA.R')
 source('BYM.R')
 ```
 
-
-Set general environment
+Set general environment for the modelling stage.
 ```{r}
 # General modelling seting
 dir.create('./lstm_models/')
 dir.create('./autoarima_models/')
 dir.create('./bym_models/')
 ```
+
+
 ## LSTM models
 
 Retrieved processed data
