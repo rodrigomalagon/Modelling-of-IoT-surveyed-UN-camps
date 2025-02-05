@@ -14,7 +14,7 @@ source('Data processing.R')
 
 ## Data selection
 
-Retrieve the queried data
+Retrieve the queried data, locally queried from SQL database.
 
 ``` r
 power_consumption <- read.csv(file = #path to queried consumption data from local SQL database
@@ -23,7 +23,7 @@ sensors <- read.csv(file = #path to queried consumption data from local SQL data
                       )
 ```
 
-Format raw values
+Format raw values.
 
 ``` r
 # Process power consumption reading with weight value
@@ -35,7 +35,8 @@ sensors$lat <- gsub(',','.',sensors$OGI_LAT) |> as.numeric()
 sensors$long <- gsub(',','.',sensors$OGI_LONG)|> as.numeric()
 ```
 
-Extract time leap per sensors
+Extract time leap per sensors to account for sensors with different gap
+between their readings.
 
 ``` r
 # Extract time leap in each sensor's time series
@@ -248,6 +249,8 @@ Filter only processed sensors
 ``` r
 sensors <- sensors[sensors$MISSION_DEVICE_TAG %in% stack_processed_power_consumption$MISSION_DEVICE_TAG,]
 ```
+
+Save processed dataset
 
 ``` r
 file_path <- paste0(processing_outputs_dir,'sensors_processed.csv')
