@@ -14,7 +14,7 @@ source('AutoARIMA.R')
 source('BYM.R')
 ```
 
-Set general environment
+Set general environment for the modelling stage.
 
 ``` r
 # General modelling seting
@@ -25,7 +25,7 @@ dir.create('./bym_models/')
 
 ## LSTM models
 
-Retrieved processed data
+Retrieved processed data.
 
 ``` r
 power_consumption <- "./data/processed_data/power_consumption_processed.csv" |> read.csv()
@@ -35,7 +35,7 @@ sensors <- "./data/processed_data/sensors_processed.csv" |> read.csv()
 
 ### Data preparation for LSTM models
 
-Set current model environment
+Set current model environment.
 
 ``` r
 # Set environment for current model
