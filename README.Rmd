@@ -19,4 +19,5 @@ This project is the product of academy-ONG collaboration. The data used in this 
 
 ![Comparison of fitted models in a particular sensor's time series (test set).](./images/Models fit comparison in test set.png)
 
+
 ![Comparison of Overall $R^2$ across 4 model combinations (all sensors considered).](./images/overall_r2_comparison.png)
