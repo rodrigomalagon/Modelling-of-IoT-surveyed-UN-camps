@@ -27,7 +27,7 @@ This project is the product of academy-ONG collaboration. The data used
 in this work was shared by the [United Nations Global Service
 Center](https://www.ungsc.org/) agency. Due to privacy concerns, we only
 share the source code. However, to showcase the performance of our
-models, we share in the [Results](##Results) section some output
+models, we share in the [Results](#results) section some output
 graphics. The methods and code by the author are shared through the
 license in this repository.
 
