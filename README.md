@@ -31,6 +31,9 @@ models, we share in the [Results](#results) section some output
 graphics. The methods and code by the author are shared through the
 license in this repository.
 
+The complete research report of this project is available in the
+published [Project thesis](Project%20thesis.pdf%60)
+
 ## Results
 
 <figure>
