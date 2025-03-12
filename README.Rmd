@@ -15,7 +15,7 @@ The project focuses on processing and modelling energy consumption data, capture
 
 This project is the product of academy-ONG collaboration. The data used in this work was shared by the [United Nations Global Service Center](https://www.ungsc.org/) agency. Due to privacy concerns, we only share the source code. However, to showcase the performance of our models, we share in the [Results](#results) section some output graphics. The methods and code by the author are shared through the license in this repository.
 
-The complete research report of this project is available in the published [Project thesis](Project thesis.pdf`)
+The complete research report of this project is available in the published [Project thesis](Project thesis.pdf).
 
 ## Results
 
